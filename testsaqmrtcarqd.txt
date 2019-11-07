@@ -1,0 +1,83 @@
+/*
+  Automatic Data fill form :
+
+  Keyboard automatic fill data form Thai Smart Card on Microsoft Excel
+
+  The circuit :
+  * Arduino Leonardo (ET-BASE AVR EASY32U4)
+  * THID V1.0 (Thai Smart Card Reader)
+ 
+  Switch Config THID V1.0:
+  SEX       = ON
+  TH NAME   = OFF  (THAI LANGUAGE)
+  EN NAME   = ON
+  BIRTH     = ON
+  ADDRESS   = OFF  (THAI LANGUAGE)
+  ISSUE     = OFF  (DATE & THAI LANGUAGE)
+  CODE      = ON
+  PICTURE   = OFF  (PICTURE)
+
+  Created : 16 May 2014
+  By : Adisak Injan 083-0066646
+*/
+
+char ReadByte = 0;        // Data buffer form serial port
+int Counter = 0;          // Counter of data
+int index = 0;            // index pointer
+char Buffer[100];         // Buffer reserv for serial port
+
+int  TimerOut = 0;        // Time out for clear counter
+long previousMillis = 0;  // Previous timer
+int  interval = 10;       // Timer interval every 10 ms.
+long currentMillis = 0;   // Current timer
+
+void setup()
+{
+  Keyboard.begin();       // Initial Keyboard
+  Serial1.begin(115200);  // Initial serial port baud rate 115200,8,n,1
+  Serial1.flush();        // Clear serial port
+}
+
+void loop()
+{
+  if (Serial1.available() > 0)
+  {
+    TimerOut = 10;                        // Set time out 10 x 10 = 100 ms for serial port
+    ReadByte = Serial1.read();            // Read serial port
+    Buffer[Counter] =  ReadByte;          // Send data form serial port to buffer
+    Counter ++;                           // incress address buffer data
+    if (ReadByte == 0x0D)                 // Check end message
+    {     
+      if (Buffer[0] == 'R' && Buffer[1] == 'E' && Buffer[2] == 'M' && Buffer[3] == 'O' && Buffer[4] == 'V' && Buffer[5] == 'E')
+      {                                    // Check remove Smart Card form THID V1.0 by "REMOVE\n"
+        Keyboard.write(KEY_HOME);          // Send key "HOME" over keyboard
+        Keyboard.println("");              // Send key "ENTER" over keyboard
+      }
+      else
+      {
+        for (index=0;index<Counter;index++)
+        {
+          Keyboard.write(Buffer[index]);   // Send Message over keyboard
+        }
+        Keyboard.write(KEY_TAB);           // Send key "TAB" over keyboard
+      }
+      Counter = 0;                         // Clear Counter Data
+    }   
+  }
+   
+   
+  currentMillis = millis();                // Read timer
+  if(currentMillis - previousMillis > interval) 
+  {                                        // Timer every 10ms
+    previousMillis = currentMillis;   
+    if (TimerOut != 0 && Counter != 0)     // Check time out serial port
+    {     
+      TimerOut --;                         // Decress time out
+    }
+    else
+    {
+      Counter = 0;                         // Clear Counter Data
+    }
+  }
+ 
+}
